@@ -183,3 +183,60 @@ def get_sparse_tensor(pc: torch.tensor, voxel_size: float):
         feats=features_batch,
         quantize2original=quantize2original.to(pc.device),
     )
+
+
+if __name__ == "__main__":
+    import yaml
+    from omegaconf import OmegaConf
+    from base_dex import DexDataset
+
+    from glob import glob
+    import numpy as np
+
+    path_lst = glob('assets/grasp/bodex_shadow_tabletop/succ_collect/1_TypeUnaware/**/**/**.npy', recursive=True)
+
+    invalid_data_num = 0
+    for path in path_lst:
+        data = np.load(path, allow_pickle=True).item()
+        if data['grasp_qpos'].shape[1] == 18:
+            # print(path)
+            invalid_data_num += 1
+
+    print(f"Invalid data num: {invalid_data_num}")
+    
+    sp_voxel_size = 0.005
+
+    config = yaml.safe_load(open('/home/jyp/research/DexLearn/dexlearn/config/data/bodex_shadow_tabletop.yaml', 'r'))
+    config['grasp_path'] = config['grasp_path'].replace('${data_folder}', 'assets')
+    config['object_path'] = config['object_path'].replace('${data_folder}', 'assets')
+    config = OmegaConf.create(config)
+
+    train_dataset = DexDataset(config, "train", sp_voxel_size)
+
+    loader = DataLoader(
+            train_dataset,
+            batch_size=256,
+            drop_last=True,
+            num_workers=0,
+            shuffle=True,
+            collate_fn=minkowski_collate_fn,
+        )
+    for data in loader:
+        breakpoint()
+
+    train_loader = InfLoader(
+        DataLoader(
+            train_dataset,
+            batch_size=256,
+            drop_last=True,
+            num_workers=16,
+            shuffle=True,
+            collate_fn=minkowski_collate_fn,
+        ),
+        'cuda:0',
+    )
+
+    for it in range(100):
+        print(f"Iteration {it}")
+        data = train_loader.get()
+        breakpoint()

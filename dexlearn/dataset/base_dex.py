@@ -88,6 +88,8 @@ class DexDataset(Dataset):
 
     def __getitem__(self, id: int):
         ret_dict = {}
+        # is_tabletop = "tabletop" in self.config.grasp_path
+        is_tabletop = self.config.scene == "tabletop"
 
         if self.mode == "train" or self.mode == "eval":
             # random select grasp data
@@ -132,6 +134,14 @@ class DexDataset(Dataset):
             if "scene_scale" in grasp_data:
                 pc *= grasp_data["scene_scale"][rand_pose_id]
 
+            # center the object pc and hand pose
+            object_code = list(scene_cfg["scene"].keys())[0]
+            object_pose = scene_cfg["scene"][object_code]["pose"]
+
+            if is_tabletop:
+                pc[:, :2] -= object_pose[:2]
+                robot_pose[:, :, :2] -= object_pose[:2]
+
             ret_dict["hand_trans"] = robot_pose[:, :, :3]  # (K, n, 3)
             ret_dict["hand_rot"] = numpy_quaternion_to_matrix(
                 robot_pose[:, :, 3:7]
@@ -143,6 +153,9 @@ class DexDataset(Dataset):
             scene_path = self.test_cfg_lst[id % len(self.test_cfg_lst)]
             scene_cfg = load_scene_cfg(scene_path)
 
+            object_code = list(scene_cfg["scene"].keys())[0]
+            object_pose = scene_cfg["scene"][object_code]["pose"]
+
             # read point cloud
             pc_path_lst = glob(
                 pjoin(self.object_pc_folder, scene_cfg["scene_id"], "partial_pc**.npy"),
@@ -153,6 +166,11 @@ class DexDataset(Dataset):
                 raw_pc.shape[0], self.config.num_points, replace=True
             )
             pc = raw_pc[idx]
+
+            # center the object pc
+            if is_tabletop:
+                pc[:, :2] -= object_pose[:2]
+                ret_dict["object_pose"] = object_pose
 
             ret_dict["save_path"] = pjoin(
                 rand_grasp_type, scene_cfg["scene_id"], os.path.basename(pc_path)
@@ -167,3 +185,20 @@ class DexDataset(Dataset):
             ret_dict["coors"] = pc / self.sc_voxel_size  # (N, 3)
             ret_dict["feats"] = pc  # (N, 3)
         return ret_dict
+
+
+if __name__ == "__main__":
+    import yaml
+    from omegaconf import OmegaConf
+
+    config = yaml.safe_load(open('/home/jyp/research/DexLearn/dexlearn/config/data/bodex_shadow_tabletop.yaml', 'r'))
+    # config['grasp_path'] = config['grasp_path'].replace('${data_folder}', 'assets')
+    # config['object_path'] = config['object_path'].replace('${data_folder}', 'assets')
+    config['grasp_path'] = "output/bodex_shadow_tabletop_nflow_train_full/tests/step_050000"
+    config['object_path'] = config['object_path'].replace('${data_folder}', 'assets')
+    config = OmegaConf.create(config)
+
+    breakpoint()
+    dataset = DexDataset(config, "train", sc_voxel_size=0.005)
+    data = dataset[0]
+    breakpoint()

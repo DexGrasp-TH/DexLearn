@@ -50,6 +50,11 @@ def main_func(config: DictConfig) -> None:
             robot_pose = robot_pose[batch_indices, topk_indices]
             log_prob = log_prob[batch_indices, topk_indices]
 
+            # detect tabletop setting
+            if config.data.scene == "tabletop":
+                assert "object_pose" in data
+                robot_pose[..., :2] += data["object_pose"][:, :2].unsqueeze(1).unsqueeze(2)
+
             save_dict = {
                 "pregrasp_qpos": robot_pose[..., 0, :],
                 "grasp_qpos": robot_pose[..., 1, :],
