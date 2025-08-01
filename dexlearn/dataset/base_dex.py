@@ -3,6 +3,7 @@ from os.path import join as pjoin
 from glob import glob
 import random
 
+import json
 import numpy as np
 from torch.utils.data import Dataset
 
@@ -187,7 +188,62 @@ class DexDataset(Dataset):
         return ret_dict
 
 
+def convert_pc_to_network_input(pc: np.ndarray, extras):
+    """
+    Convert point cloud to network input format.
+    Args:
+        pc (np.ndarray): Point cloud of shape (N, 3).
+        extras (dict): Includes additional information (i.e., object pose, object name, asset root)
+    Returns:
+        None
+    """
+    asset_root = extras["asset_root"]
+
+    # what's important in scene_cfg?
+    # - scene_id: the object name
+    # - object_pose: the object pose
+
+    object_name = extras["name"]
+    object_pose = np.array(extras["pose"])
+    fake_scale_str = 'scale100_pose000_0'
+
+    scene_id = f'{object_name}/tabletop_ur10e/{fake_scale_str}'
+    scene_cfg = {
+        "scene": {
+            object_name: {'pose': object_pose}
+        },
+        "scene_id": scene_id
+    }
+    scene_cfg_path = os.path.join(asset_root, 'scene_cfg', f'{scene_id}.npy')
+    os.makedirs(os.path.dirname(scene_cfg_path), exist_ok=True)
+    np.save(scene_cfg_path, scene_cfg, allow_pickle=True)
+
+    # what's important in vision_data
+    # - partial_pc: under vision_data/azure_kinect_dk/{object}
+
+    vision_data_path = os.path.join(asset_root, 'vision_data', 'azure_kinect_dk', scene_id, 'partial_pc_00.npy')
+    os.makedirs(os.path.dirname(vision_data_path), exist_ok=True)
+    np.save(vision_data_path, pc, allow_pickle=True)
+
+    # reset test.json to add the new sample
+    test_json_path = os.path.join(asset_root, 'valid_split', 'test.json')
+    json.dump([object_name], open(test_json_path, 'w'), indent=4)
+
+
 if __name__ == "__main__":
+    # pc = np.random.rand(1000, 3)  # Example point cloud
+    pc = np.load('/home/hand/intern/DexLearn/assets/object/online/vision_data/azure_kinect_dk/sem_MilkCarton_f5b5a24adc6826ace41b639931f9ca1/tabletop_ur10e/scale006_pose003_0/partial_pc_00.npy')
+    scene_cfg = np.load('/home/hand/intern/DexLearn/assets/object/online/scene_cfg/sem_MilkCarton_f5b5a24adc6826ace41b639931f9ca1/tabletop_ur10e/scale006_pose003_0.npy', allow_pickle=True).item()
+    object_pose = scene_cfg['scene']['sem_MilkCarton_f5b5a24adc6826ace41b639931f9ca1']['pose']
+    extras = {
+        "asset_root": "/home/hand/intern/DexLearn/assets/object/online",
+        "name": "example_object",
+        "pose": object_pose
+    }
+    convert_pc_to_network_input(pc, extras)
+    print("Converted point cloud to network input format.")
+
+    exit(0)
     import yaml
     from omegaconf import OmegaConf
 
