@@ -14,7 +14,10 @@ HOST = '10.21.70.145'
 PORT = 50008
 
 def process(cfg, model, points: np.ndarray, array: np.ndarray) -> np.ndarray:
-    result = predict(cfg, model)[0]
+    try:
+        result = predict(cfg, model)[0]
+    except:
+        return None
     print(f"Prediction result: {result['pregrasp_qpos'][0]}")
 
     # convert torch to numpy
@@ -25,6 +28,8 @@ def process(cfg, model, points: np.ndarray, array: np.ndarray) -> np.ndarray:
 
 def main_func(cfg: DictConfig):
     model = load_model(cfg)
+
+    latest_result = None
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -61,8 +66,15 @@ def main_func(cfg: DictConfig):
                 # convert format
                 result = process(cfg, model, object_pcd, object_pose)
 
-                print(f"Received point cloud P with shape {object_pcd.shape}, P[0]: {object_pcd[0]}")
-                print(f"Received object pose {object_pose}")
+                if result is None:
+                    print("No valid result returned from the model.")
+                    result = latest_result
+                else:
+                    print(f"Received point cloud P with shape {object_pcd.shape}, P[0]: {object_pcd[0]}")
+                    print(f"Received object pose {object_pose}")
+
+                if latest_result is None:
+                    latest_result = result
 
                 # 序列化结果并发送
                 result_bytes = pickle.dumps(result)
