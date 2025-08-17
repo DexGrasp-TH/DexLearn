@@ -10,7 +10,7 @@ from graspgen_predictor import load_model, predict
 
 
 # global config
-HOST = '10.21.70.145'
+HOST = '127.0.0.1'
 PORT = 50008
 
 def process(cfg, model, points: np.ndarray, array: np.ndarray) -> np.ndarray:
@@ -57,7 +57,7 @@ def main_func(cfg: DictConfig):
                 # scene_cfg = np.load('/home/hand/intern/DexLearn/assets/object/kitchen/scene_cfg/sem_MilkCarton_f5b5a24adc6826ace41b639931f9ca1/tabletop_ur10e/scale006_pose003_0.npy', allow_pickle=True).item()
                 # object_pose = scene_cfg['scene']['sem_MilkCarton_f5b5a24adc6826ace41b639931f9ca1']['pose']
                 extras = {
-                    "asset_root": "/home/hand/intern/DexLearn/assets/object/online",
+                    "asset_root": "/home/jyp/research/third_party/DexLearn/assets/object/online",
                     "name": "example_object",
                     "pose": object_pose
                 }
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     model_name = "bodex_leap_online_nflow_full"
     sys.argv = (
         sys.argv[:1]
-        + list(OmegaConf.load(f"/home/hand/intern/DexLearn/output/{model_name}/.hydra/overrides.yaml"))
+        + list(OmegaConf.load(f"/home/jyp/research/third_party/DexLearn/output/{model_name}/.hydra/overrides.yaml"))
     )
 
     # remove duplicated args. Note: cmd has the priority!
