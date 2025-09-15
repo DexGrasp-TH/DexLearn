@@ -8,3 +8,4 @@ from .normalizing_flow import (
 )
 from .mlp import MLPRTJ
 from .diffusion import DiffusionRT_MLPRTJ, DiffusionRTJ
+from .grasp_evaluator import GraspEvaluator_MLPRTJ

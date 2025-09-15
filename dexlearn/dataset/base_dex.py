@@ -114,9 +114,17 @@ class DexDataset(Dataset):
                 ],
                 axis=-2,
             )
+            
+            if 'success' in grasp_data:
+                success_flag = grasp_data['success']
+            else:
+                success_flag = None
+            
             if len(robot_pose.shape) == 3:
                 rand_pose_id = np.random.randint(robot_pose.shape[0])
                 robot_pose = robot_pose[rand_pose_id : rand_pose_id + 1]  # 1, 3, J
+                if success_flag is not None:
+                    success_flag = success_flag[rand_pose_id : rand_pose_id + 1]
             else:
                 raise NotImplementedError
 
@@ -148,6 +156,9 @@ class DexDataset(Dataset):
                 robot_pose[:, :, 3:7]
             )  # (K, n, 3, 3)
             ret_dict["hand_joint"] = robot_pose[:, :, 7:]  # (K, n, Q)
+            
+            if success_flag is not None:
+                ret_dict["success"] = success_flag.astype(np.float32)  # (K,)
 
         elif self.mode == "test":
             rand_grasp_type = self.grasp_type_lst[id // len(self.test_cfg_lst)]

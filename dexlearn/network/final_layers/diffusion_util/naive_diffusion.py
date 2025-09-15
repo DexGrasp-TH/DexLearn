@@ -202,11 +202,22 @@ class MLPWrapper(MLP):
     def forward(self, x, t, cond):
         t = self.embedding(t)
         return super().forward(torch.cat([x, cond + t], dim=-1))
+    
+
+class MLPWrapperNoTime(MLP):
+    def __init__(self, channels, feature_dim, *args, **kwargs):
+        self.channels = channels
+        input_dim = channels + feature_dim
+        super().__init__(input_dim=input_dim, *args, **kwargs)
+
+    def forward(self, x, cond):
+        return super().forward(torch.cat([x, cond], dim=-1))
 
 
 class GaussianDiffusion1D(nn.Module):
     def __init__(self, model, config, cond_fn=lambda x, t, cond: cond):
         super().__init__()
+        breakpoint()
         self.config = config
         self.model = model
         self.cond_fn = cond_fn

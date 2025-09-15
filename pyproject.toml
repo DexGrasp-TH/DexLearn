@@ -3,7 +3,7 @@ requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dexlearn"
+name = "dexlearn_guidance"
 description = "Learning-based grasp synthesis for dexterous hands"
 version = "0.1"
 authors = [{name = "Jiayi Chen", email = "jiayichen@pku.edu.cn"}]
@@ -11,10 +11,16 @@ dependencies = [
     "wandb",
     "einops",
     "scipy",
+    "hydra-core",
+    "trimesh",
+    "pytorch_kinematics",
+    "pytorch_volumetric",
+    "pycollada",
+    "pyglet<2",
 ]
 
 [project.optional-dependencies]
 cuda = ["pytorch>=2.0.1"]
 
 [tool.setuptools]
-packages = ["dexlearn"]
+packages = ["dexlearn_guidance"]
